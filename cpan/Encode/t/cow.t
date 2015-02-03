@@ -5,6 +5,8 @@ use strict;
 use Encode ();
 use Test::More tests => 2;
 
+# ASCII specific
+
 
 my %a = ( "L\x{c3}\x{a9}on" => "acme" );
 my ($k) = ( keys %a );

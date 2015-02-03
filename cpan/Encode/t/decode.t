@@ -11,7 +11,7 @@ sub croak_ok(&) {
     like $@, qr/does not map/;
 }
 
-my $bytes = "L\x{e9}on";
+my $bytes = "L\x{e9}on";    # ASCII specific
 my $pad = "\x{30C9}";
 
 my $orig = $bytes;
