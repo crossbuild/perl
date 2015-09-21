@@ -49589,6 +49589,7 @@ static const UV XPosixXDigit_invlist[] = { /* for EBCDIC 1047 */
  * 13e2b7087bcca3163272e64e34e480534bd2f8353a0245c26e6642566f59a60d lib/unicore/LineBreak.txt
  * 9bb54cd7b5509779f269fa60341bcbfca8da8f17d3c4999e44a5a51671d3c402 lib/unicore/NameAliases.txt
  * e4c29d9ceefbe2382af819ac7646265a9e4ea599ce04a90d31bec97cfaa2848f lib/unicore/NamedSequences.txt
+ * e47313dc93c124a188cfce8a4f7c2ad4425a7335d49ea4d45590b3fb9e044815 lib/unicore/NormTest.txt
  * 70d40297f1bf91397fbdab5a770c12100733e67c5c3398446c5e950715d5e535 lib/unicore/PropList.txt
  * 03a440f2a4b9151043a6bb53d4a4e528b73238079f9d686dc2a5846e6895588a lib/unicore/PropValueAliases.txt
  * 8e8b48c2080d31aa6713f5535aad94a1f7bc9a65cc52563724e5e69b0a3b4196 lib/unicore/PropertyAliases.txt
@@ -49613,7 +49614,7 @@ static const UV XPosixXDigit_invlist[] = { /* for EBCDIC 1047 */
  * 1a0687fb9c6c4567e853913549df0944fe40821279a3e9cdaa6ab8679bc286fd lib/unicore/extracted/DLineBreak.txt
  * 40bcfed3ca727c19e1331f6c33806231d5f7eeeabd2e6a9e06a3740c85d0c250 lib/unicore/extracted/DNumType.txt
  * a18d502bad39d527ac5586d7bc93e29f565859e3bcc24ada627eff606d6f5fed lib/unicore/extracted/DNumValues.txt
- * 2a113118f00b0a9ad6a12eb55b8341a332d8547a8841df2377e938e0fcd1b967 lib/unicore/mktables
+ * b05c4c430320718051e3ef02e89bd4822bb750da2511e1ef528db7563e9b8593 lib/unicore/mktables
  * 462c9aaa608fb2014cd9649af1c5c009485c60b9c8b15b89401fdc10cf6161c6 lib/unicore/version
  * 6227d49bee9f6ea30b83a239fc929e73a2351fcfa2e0a25e2e4ccf7e53ec8b6a regen/charset_translations.pl
  * 8a097f8f726bb1619af2f27f149ab87e60a1602f790147e3a561358be16abd27 regen/mk_invlists.pl
