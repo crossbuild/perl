@@ -197,6 +197,13 @@ SKIP: {
     local $TODO;
     $TODO = "Encode not working on EBCDIC" if $::IS_EBCDIC;
     is runperl(
+    # got "stdin ok\n\x{8a}\x{69}\n\x{8a}\x{69}\n"
+    # expected "stdin ok\n\x{8b}\x{72}\n\x{8b}\x{72}\n"
+# U+00DA: \xC3\x9A	\xC6\xBA	\x8A\x69 (FE)	*\x80\x68 (FE)	*\x8B\x70 (FE)	Ú  LATIN CAPITAL LETTER U WITH ACUTE
+# U+00FE: \xC3\xBE	\xC7\xBE	\x8B\x72 (8E)	*\x8A\x71 (8E)	*\x8C\x74 (8E)	þ  LATIN SMALL LETTER THORN
+# So there is some unwanted xlation going on here.  we print \xFE, and we get
+# the utf8 for U+00DA, which is the Unicode code point for 0xFE.
+
          progs => [
             'use open q\:encoding(UTF-8)\, q-:std-;',
             'use open q\:encoding(UTF-8)\;',
