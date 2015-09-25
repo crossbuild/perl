@@ -411,7 +411,10 @@ sub _tests_from_manifest {
 
 		# XXX Generates way too many error lines currently.  Skip for
 		# v5.22
-		next if $t =~ /^cpan/ && $t !~ /Unicode-(Collate|Normalize)/; # && ord("A") != 65;
+		#print STDERR __FILE__, ": ", __LINE__, ": ", $t, "\n";
+		next if $t =~ /^cpan/
+		&& $t !~ /Unicode-(Collate|Normalize)|MIME-Base64/; # && ord("A") != 65;
+		#print STDERR __FILE__, ": ", __LINE__, ": ", $t, "\n";
 
 		if (!$::core || $t =~ m!^lib/[a-z]!) {
 		    if (defined $extension) {
