@@ -13,12 +13,24 @@ print "1..283\n";
 print "# Testing MIME::Base64-", $MIME::Base64::VERSION, "\n";
 
 BEGIN {
- if (ord('A') == 0x41) {
+ if (0 && ord('A') == 0x41) {
   *ASCII = sub { return $_[0] };
  }
  else {
   require Encode;
-  *ASCII = sub { Encode::encode('ascii',$_[0]) };
+  *ASCII = sub { my $result = Encode::encode('ascii',$_[0]);
+                printf STDERR "%s: %d: encode_to_ascii(", __FILE__, __LINE__;
+                print STDERR join " ", map { sprintf("%X", ord $_) } split "", $_[0];
+                print STDERR ")\nis ";
+                if (defined $result) {
+                    print STDERR join " ", map { sprintf("%X", ord $_) } split "", $result;
+                }
+                else {
+                    printf STDERR "undefined\n";
+                }
+                print STDERR "\n";
+                return $result;
+  };
  }
 }
 
