@@ -16,8 +16,10 @@ BEGIN {
 
 SKIP: {
 	skip 'No locale testing for Perl < 5.6.0', 6 if $] < 5.006;
-	skip 'No locale testing without d_setlocale', 6
-	    if(!$Config{d_setlocale});
+	skip 'No locale testing without d_setlocale and locales enabled', 6
+	    unless    $Config{d_setlocale}
+	           && $Config{d_locconv}
+                   && $Config{ccflags} !~ /\bD?NO_LOCALE\b/;
 
 	# test locale handling
 	my $warning = '';
