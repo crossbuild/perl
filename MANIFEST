@@ -4378,7 +4378,6 @@ lib/unicore/NamedSequences.txt			Unicode character database
 lib/unicore/NamedSqProv.txt			Unicode character database
 lib/unicore/NamesList.txt			Unicode character database
 lib/unicore/NormalizationCorrections.txt	Unicode character database
-lib/unicore/NormTest.txt			Unicode character database
 lib/unicore/PropertyAliases.txt			Unicode character database
 lib/unicore/PropList.txt			Unicode character database
 lib/unicore/PropValueAliases.txt		Unicode character database
