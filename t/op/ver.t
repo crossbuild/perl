@@ -227,6 +227,7 @@ SKIP: {
   skip("In EBCDIC the v-string components cannot exceed 2147483647", 6)
     if $::IS_EBCDIC;
 
+  no warnings 'deprecated'; # These are above IV_MAX on 32 bit machines
   # [ID 20010902.001] check if v-strings handle full UV range or not
   if ( $Config{'uvsize'} >= 4 ) {
     is(  sprintf("%vd", eval 'v2147483647.2147483648'),   '2147483647.2147483648', 'v-string > IV_MAX[32-bit]' );

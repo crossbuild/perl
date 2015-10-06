@@ -258,6 +258,7 @@ SKIP: {
     # errors in EBCDIC.
     my $first_char =  0x80000001;
     my $second_char = 0x80000000;
+    no warnings 'deprecated'; # This is above IV_MAX on 32 bit machines
     my $utf = chr($first_char) . chr($second_char);
     my $result = chop($utf);
     is($utf, chr $first_char, "chopping high 'unicode'- remnant");

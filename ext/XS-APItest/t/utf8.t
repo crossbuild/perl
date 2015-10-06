@@ -140,6 +140,7 @@ foreach my $test (
 }
 
 my $FF_ret;
+no warnings 'deprecated'; # Some of the below are above IV_MAX on 32 bit machines
 
 use Unicode::UCD;
 my $has_quad = ($Unicode::UCD::MAX_CP > 0xFFFF_FFFF);
@@ -383,6 +384,7 @@ for my $u (sort { utf8::unicode_to_native($a) <=> utf8::unicode_to_native($b) }
     is(test_UVCHR_IS_INVARIANT($n), $offskip_should_be == 1,
        "Verify UVCHR_IS_INVARIANT($hex_n) is $display_invariant");
 
+    no warnings 'deprecated'; # One is above proposed legal max on EBCDIC
     my $n_chr = chr $n;
     utf8::upgrade $n_chr;
 

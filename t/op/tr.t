@@ -342,6 +342,7 @@ is((($a = v300.196.172.300.196.172) =~ tr/\xc4/\xc5/), 2,
 is((($a = v300.196.172.300.196.172) =~ tr/\x{12c}/\x{12d}/), 2);
 
 
+no warnings 'deprecated'; # Some are above proposed legal max on EBCDIC
 ($a = v300.196.172.300.196.172) =~ tr/\xc4/\x{12d}/c;
 is($a, v301.196.301.301.196.301,    'translit w/complement');
 

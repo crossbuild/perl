@@ -35,6 +35,10 @@
 
 static const char unees[] =
     "Malformed UTF-8 character (unexpected end of string)";
+static const char cp_above_legal_max[] =
+    "It is deprecated to use code point 0x%"UVXf"; the permissible max is 0x%"UVXf"";
+
+#define MAX_NON_DEPRECATED_CP (IV_MAX)
 
 /*
 =head1 Unicode Support
@@ -116,9 +120,11 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
 #endif
 
     /* The first problematic code point is the first surrogate */
-    if (   flags    /* It's common to turn off all these */
-        && uv >= UNICODE_SURROGATE_FIRST
-        && ckWARN3_d(WARN_SURROGATE, WARN_NON_UNICODE, WARN_NONCHAR))
+    if (   uv >= UNICODE_SURROGATE_FIRST
+        && (   (   flags
+                && ckWARN3_d(WARN_SURROGATE, WARN_NON_UNICODE, WARN_NONCHAR))
+            || (   UNLIKELY(uv > MAX_NON_DEPRECATED_CP)
+                && ckWARN_d(WARN_DEPRECATED))))
     {
 	if (UNICODE_IS_SURROGATE(uv)) {
 	    if (flags & UNICODE_WARN_SURROGATE) {
@@ -130,7 +136,13 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
 	    }
 	}
 	else if (UNICODE_IS_SUPER(uv)) {
-	    if (flags & UNICODE_WARN_SUPER
+            if (   UNLIKELY(uv > MAX_NON_DEPRECATED_CP)
+                && ckWARN_d(WARN_DEPRECATED))
+            {
+		Perl_warner(aTHX_ packWARN(WARN_DEPRECATED),
+                            cp_above_legal_max, uv, MAX_NON_DEPRECATED_CP);
+            }
+            else if (flags & UNICODE_WARN_SUPER
 		|| (UNICODE_IS_FE_FF(uv) && (flags & UNICODE_WARN_FE_FF)))
 	    {
 		Perl_ck_warner_d(aTHX_ packWARN(WARN_NON_UNICODE),
@@ -248,8 +260,15 @@ is the recommended wide native character-aware way of saying
 
     *(d++) = uv;
 
-This function accepts any UV as input.  To forbid or warn on non-Unicode code
-points, or those that may be problematic, see L</uvchr_to_utf8_flags>.
+This function accepts any UV as input, but very high code points will raise a
+deprecation warning.  To be completely portable across both ASCII and EBCDIC
+platforms, the code point should a max of 0x3FFF_FFFF (2**30 -1).  But on ASCII
+platforms, the warning is not raised unless the code point is above the
+platform's C<IV_MAX> value, which is typically 0x7FFF_FFFF (2**31 -1) in a
+32-bit word, and much higher in a 64-bit one.
+
+It is possible to forbid or warn on non-Unicode code points, or those that may
+be problematic by using L</uvchr_to_utf8_flags>.
 
 =cut
 */
@@ -281,9 +300,15 @@ This is the Unicode-aware way of saying
 
     *(d++) = uv;
 
-This function will convert to UTF-8 (and not warn) even code points that aren't
-legal Unicode or are problematic, unless C<flags> contains one or more of the
-following flags:
+If C<flags> is 0, this function accepts any UV as input, but very high code
+points will raise a deprecation warning.  To be completely portable across both
+ASCII and EBCDIC platforms, the code point should a max of 0x3FFF_FFFF (2**30
+-1).  But on ASCII platforms, the warning is not raised unless the code point
+is above the platform's C<IV_MAX> value, which is typically 0x7FFF_FFFF (2**31
+-1) in a 32-bit word, and much higher in a 64-bit one.
+
+Specifying C<flags> can further restrict what is allowed and not warned on, as
+follows:
 
 If C<uv> is a Unicode surrogate code point and C<UNICODE_WARN_SURROGATE> is set,
 the function will raise a warning, provided UTF8 warnings are enabled.  If instead
@@ -297,7 +322,10 @@ code points that are
 above the Unicode maximum of 0x10FFFF.  Code points above 0x7FFF_FFFF (which are
 even less portable) can be warned and/or disallowed even if other above-Unicode
 code points are accepted, by the C<UNICODE_WARN_FE_FF> and
-C<UNICODE_DISALLOW_FE_FF> flags.
+C<UNICODE_DISALLOW_FE_FF> flags.  This is entirely independent from the
+deprecation warning for code points above C<IV_MAX> (C<IV_MAX> may be a
+different value than this on the platform); only the deprecation warning is
+raised if both otherwise would be.
 
 And finally, the flag C<UNICODE_WARN_ILLEGAL_INTERCHANGE> selects all four of
 the above WARN flags; and C<UNICODE_DISALLOW_ILLEGAL_INTERCHANGE> selects all
@@ -456,8 +484,17 @@ a malformation and raise a warning, specify both the WARN and DISALLOW flags.
 (But note that warnings are not raised if lexically disabled nor if
 C<UTF8_CHECK_ONLY> is also specified.)
 
-Very large code points (above 0x7FFF_FFFF) are considered more problematic than
-the others that are above the Unicode legal maximum.  There are several
+It is now deprecated to have very high code points, and this function will
+raise a deprecation warning for these (unless such warnings are turned off).
+To be completely portable across both ASCII and EBCDIC platforms, the code
+point should a max of 0x3FFF_FFFF (2**30 -1).  But on ASCII platforms, the
+warning is not raised unless the code point is above the platform's C<IV_MAX>
+value, which is typically 0x7FFF_FFFF (2**31 -1) in a 32-bit word, and much
+higher in a 64-bit one.
+
+Very large code points (above 0x7FFF_FFFF) have long been considered more
+problematic than the others (even before the deprecation) the ones that are
+above the Unicode legal maximum.  There are several
 reasons: they requre at least 32 bits to represent them on ASCII platforms, are
 not representable at all on EBCDIC platforms, and the original UTF-8
 specification never went above this number (the current 0x10FFFF limit was
@@ -686,9 +723,11 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 
     /* Here, the input is considered to be well-formed, but it still could be a
      * problematic code point that is not allowed by the input parameters. */
-    if (uv >= UNICODE_SURROGATE_FIRST /* isn't problematic if < this */
-	&& (flags & (UTF8_DISALLOW_ILLEGAL_INTERCHANGE
-		     |UTF8_WARN_ILLEGAL_INTERCHANGE)))
+    if (   uv >= UNICODE_SURROGATE_FIRST /* isn't problematic if < this */
+	&& (   (flags & (UTF8_DISALLOW_ILLEGAL_INTERCHANGE
+		        |UTF8_WARN_ILLEGAL_INTERCHANGE))
+            || (   UNLIKELY(uv > MAX_NON_DEPRECATED_CP)
+                && ckWARN_d(WARN_DEPRECATED))))
     {
 	if (UNICODE_IS_SURROGATE(uv)) {
 
@@ -747,6 +786,14 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 	    if (flags & UTF8_DISALLOW_SUPER) {
 		goto disallowed;
 	    }
+
+            /* The deprecated warning overrides any non-deprecated one */
+            if (UNLIKELY(uv > MAX_NON_DEPRECATED_CP) && ckWARN_d(WARN_DEPRECATED))
+            {
+                sv = sv_2mortal(Perl_newSVpvf(aTHX_ cp_above_legal_max,
+                                              uv, MAX_NON_DEPRECATED_CP));
+                pack_warn = packWARN(WARN_DEPRECATED);
+            }
 	}
 	else if (UNICODE_IS_NONCHAR(uv)) {
 	    if ((flags & (UTF8_WARN_NONCHAR|UTF8_CHECK_ONLY)) == UTF8_WARN_NONCHAR
@@ -848,6 +895,8 @@ the next possible position in C<s> that could begin a non-malformed character.
 See L</utf8n_to_uvchr> for details on when the REPLACEMENT CHARACTER is
 returned.
 
+XXX
+
 =cut
 */
 
@@ -863,6 +912,8 @@ Perl_utf8_to_uvchr_buf(pTHX_ const U8 *s, const U8 *send, STRLEN *retlen)
 
 /* Like L</utf8_to_uvchr_buf>(), but should only be called when it is known that
  * there are no malformations in the input UTF-8 string C<s>.  surrogates,
+ *
+ * XXX
  * non-character code points, and non-Unicode code points are allowed. */
 
 UV
@@ -922,6 +973,8 @@ the Unicode REPLACEMENT CHARACTER, if not) is silently returned, and C<*retlen>
 is set (if C<retlen> isn't NULL) so that (S<C<s> + C<*retlen>>) is the
 next possible position in C<s> that could begin a non-malformed character.
 See L</utf8n_to_uvchr> for details on when the REPLACEMENT CHARACTER is returned.
+
+XXX
 
 =cut
 */
@@ -1783,6 +1836,8 @@ any special mappings; C<""> means to use the special mappings.  Values other
 than these two are treated as the name of the hash containing the special
 mappings, like C<"utf8::ToSpecLower">.
 
+XXX
+
 C<normal> is a string like C<"ToLower"> which means the swash
 C<%utf8::ToLower>.
 
@@ -1808,6 +1863,12 @@ Perl_to_utf8_case(pTHX_ const U8 *p, U8* ustrp, STRLEN *lenp,
 	    }
 	}
 	else if (UNICODE_IS_SUPER(uv1)) {
+            if (   UNLIKELY(uv1 > MAX_NON_DEPRECATED_CP)
+                && ckWARN_d(WARN_DEPRECATED))
+            {
+		Perl_warner(aTHX_ packWARN(WARN_DEPRECATED),
+                            cp_above_legal_max, uv1, MAX_NON_DEPRECATED_CP);
+            }
 	    if (ckWARN_d(WARN_NON_UNICODE)) {
 		const char* desc = (PL_op) ? OP_DESC(PL_op) : normal;
 		Perl_warner(aTHX_ packWARN(WARN_NON_UNICODE),
@@ -3835,6 +3896,8 @@ bool
 Perl_check_utf8_print(pTHX_ const U8* s, const STRLEN len)
 {
     /* May change: warns if surrogates, non-character code points, or
+     *
+     * XXX
      * non-Unicode code points are in s which has length len bytes.  Returns
      * TRUE if none found; FALSE otherwise.  The only other validity check is
      * to make sure that this won't exceed the string's length */
@@ -3853,11 +3916,33 @@ Perl_check_utf8_print(pTHX_ const U8* s, const STRLEN len)
 	if (UNLIKELY(isUTF8_POSSIBLY_PROBLEMATIC(*s))) {
 	    STRLEN char_len;
 	    if (UTF8_IS_SUPER(s, e)) {
-		if (ckWARN_d(WARN_NON_UNICODE)) {
+                if (   ckWARN_d(WARN_NON_UNICODE)
+                    || (   ckWARN_d(WARN_DEPRECATED)
+#if defined(UV_IS_QUAD)
+                        /* 2**63 and up meet these conditions provided we have
+                         * a 64-bit word. */
+#   ifdef EBCDIC
+                        && *s == 0xFE && e - s >= UTF8_MAXBYTES
+                        && s[1] >= 0x49
+#   else
+                        && *s == 0xFF && e -s >= UTF8_MAXBYTES
+                        && s[2] >= 0x88
+#   endif
+#else   /* Below is 32-bit words */
+                        /* 2**31 and above meet these conditions on all EBCDIC
+                         * pages recognized for 32-bit platforms */
+#   ifdef EBCDIC
+                        && *s == 0xFE && e - s >= UTF8_MAXBYTES
+                        && s[6] >= 0x43
+#   else
+                        && *s >= 0xFE
+#   endif
+#endif
+                )) {
                     /* A side effect of this function will be to warn */
                     (void) utf8n_to_uvchr(s, e - s, &char_len, UTF8_WARN_SUPER);
-		    ok = FALSE;
-		}
+                    ok = FALSE;
+                }
 	    }
 	    else if (UTF8_IS_SURROGATE(s, e)) {
 		if (ckWARN_d(WARN_SURROGATE)) {
@@ -4271,6 +4356,8 @@ Instead use L</utf8_to_uvchr_buf>, or rarely, L</utf8n_to_uvchr>.
 
 This function was useful for code that wanted to handle both EBCDIC and
 ASCII platforms with Unicode properties, but starting in Perl v5.20, the
+
+XXX
 distinctions between the platforms have mostly been made invisible to most
 code, so this function is quite unlikely to be what you want.  If you do need
 this precise functionality, use instead
@@ -4298,6 +4385,8 @@ Instead you almost certainly want to use L</uvchr_to_utf8> or
 L</uvchr_to_utf8_flags>.
 
 This function is a deprecated synonym for L</uvoffuni_to_utf8_flags>,
+
+XXX
 which itself, while not deprecated, should be used only in isolated
 circumstances.  These functions were useful for code that wanted to handle
 both EBCDIC and ASCII platforms with Unicode properties, but starting in Perl

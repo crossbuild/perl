@@ -591,6 +591,7 @@ SKIP: {
 	while ($high > $highest[$length - 1]) {
 	    my $low = $high - $step[$length] + 1;
 	    $low = $highest[$length - 1] + 1 if $low <= $highest[$length - 1];
+            no warnings 'deprecated'; # Some are above EBCDIC proposed max
 	    ok(utf8::valid(do {no warnings 'utf8'; chr $low}),
 	       sprintf "chr %x, length $length is valid", $low);
 	    ok(utf8::valid(do {no warnings 'utf8'; chr $high}),
