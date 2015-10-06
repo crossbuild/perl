@@ -195,7 +195,7 @@ SKIP: {
     local $ENV{PERL_UNICODE};
     delete $ENV{PERL_UNICODE};
     local $TODO;
-    #$TODO = "Encode not working on EBCDIC" if $::IS_EBCDIC;
+    $TODO = "Encode not working on EBCDIC" if $::IS_EBCDIC;
     is runperl(
     # got "stdin ok\n\x{8a}\x{69}\n\x{8a}\x{69}\n"
     # expected "stdin ok\n\x{8b}\x{72}\n\x{8b}\x{72}\n"
