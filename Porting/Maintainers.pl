@@ -1246,6 +1246,13 @@ use File::Glob qw(:case);
     'Unicode::Normalize' => {
         'DISTRIBUTION' => 'KHW/Unicode-Normalize-1.23.tar.gz',
         'FILES'        => q[cpan/Unicode-Normalize],
+        'EXCLUDED'     => [
+            qw( MANIFEST.N
+                Normalize.pmN
+                disableXS
+                enableXS
+                ),
+        ],
     },
 
     'version' => {
