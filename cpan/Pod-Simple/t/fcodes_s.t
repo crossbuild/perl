@@ -32,7 +32,8 @@ ok( $x->_out("=pod\n\nI like S<bric-a-brac a gogo >.\n"),
 ok( $x->_out("=pod\n\nI like S<< bric-a-brac a gogo >>.\n"),
  =>  '<Document><Para>I like <S>bric-a-brac a gogo</S>.</Para></Document>' );
 
-my $unless_ascii = (chr(65) eq 'A') ? '' :
+# XXX Test anyway
+my $unless_ascii = (1 || chr(65) eq 'A') ? '' :
  "Skip because not in ASCIIland";
 
 skip( $unless_ascii,
