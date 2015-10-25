@@ -11,7 +11,7 @@ sub croak_ok(&) {
     like $@, qr/does not map/;
 }
 
-my $bytes = "L\x{e9}on";    # ASCII specific
+my $bytes = "L\x{b6}on";    # B6 is UTF-8 variant on all perl platforms so far
 my $pad = "\x{30C9}";
 
 my $orig = $bytes;
