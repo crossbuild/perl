@@ -115,6 +115,8 @@ counts on SVs.  This document will take a passive, and safe, approach
 to data debugging and for that it will describe only the C<Dump()>
 function.
 
+All output is to STDERR.
+
 The C<Dump()> function takes one or two arguments: something to dump, and
 an optional limit for recursion and array elements (default is 4).  The
 first argument is evaluted in rvalue scalar context, with exceptions for
