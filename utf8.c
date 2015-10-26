@@ -4266,8 +4266,11 @@ ASCII platforms with Unicode properties, but starting in Perl v5.20, the
 distinctions between the platforms have mostly been made invisible to most
 code, so this function is quite unlikely to be what you want.  If you do need
 this precise functionality, use instead
-C<L<NATIVE_TO_UNI(utf8_to_uvchr_buf(...))|/utf8_to_uvchr_buf>>
-or C<L<NATIVE_TO_UNI(utf8n_to_uvchr(...))|/utf8n_to_uvchr>>.
+C<NATIVE_TO_UNI(L<utf8_to_uvchr_buf(...)|/utf8_to_uvchr_buf>)>
+or C<NATIVE_TO_UNI(L<utf8n_to_uvchr(...)|/utf8n_to_uvchr>)>.
+
+See the XS code for L<Unicode::Normalize> for how to properly handle
+Perl-generated Unicode tables across all platforms and Perl versions.
 
 =cut
 */
@@ -4293,7 +4296,11 @@ both EBCDIC and ASCII platforms with Unicode properties, but starting in Perl
 v5.20, the distinctions between the platforms have mostly been made invisible
 to most code, so this function is quite unlikely to be what you want.
 
+See the XS code for L<Unicode::Normalize> for how to properly handle
+Perl-generated Unicode tables across all platforms and Perl versions.
+
 =cut
+
 */
 
 U8 *
