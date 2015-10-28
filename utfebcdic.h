@@ -149,8 +149,10 @@ END_EXTERN_C
 /* NOTE: Strictly speaking Perl's UTF-8 should not be called UTF-8 since UTF-8
  * is an encoding of Unicode, and Unicode's upper limit, 0x10FFFF, can be
  * expressed with 5 bytes.  However, Perl thinks of UTF-8 as a way to encode
- * non-negative integers in a binary format, even those above Unicode. */
-#define UTF8_MAXBYTES 7
+ * non-negative integers in a binary format, even those above Unicode.
+ *
+ * WARNING: This number must be in sync with the value in regen/ebcdic.pl */
+#define UTF8_MAXBYTES 14
 
 /*
   The following table is adapted from tr16, it shows I8 encoding of Unicode code points.
@@ -193,7 +195,8 @@ END_EXTERN_C
 		        (uv) < 0x4000           ? 3 :                       \
 		        (uv) < 0x40000          ? 4 :                       \
 		        (uv) < 0x400000         ? 5 :                       \
-		        (uv) < 0x4000000        ? 6 : UTF8_MAXBYTES )
+		        (uv) < 0x4000000        ? 6 :                       \
+		        (uv) < 0x40000000       ? 7 : UTF8_MAXBYTES )
 
 /* UTF-EBCDIC semantic macros - We used to transform back into I8 and then
  * compare, but now only have to do a single lookup by using a bit in
@@ -221,10 +224,6 @@ END_EXTERN_C
 #define isUTF8_POSSIBLY_PROBLEMATIC(c)                                          \
                 _generic_isCC(c, _CC_UTF8_START_BYTE_IS_FOR_AT_LEAST_SURROGATE)
 
-/* Can't exceed 7 on EBCDIC platforms */
-#define UTF_START_MARK(len) (0xFF & (0xFE << (7-(len))))
-
-#define UTF_START_MASK(len) (((len) >= 6) ? 0x01 : (0x1F >> ((len)-2)))
 #define UTF_CONTINUATION_MARK		0xA0
 #define UTF_CONTINUATION_MASK		((U8)0x1f)
 #define UTF_ACCUMULATION_SHIFT		5

@@ -110,7 +110,8 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
     }
 
 #ifdef EBCDIC
-    /* Not representable in UTF-EBCDIC */
+    /* Was Not representable in UTF-EBCDIC before being deprecated, so don't
+     * allow it at all */
     flags |= UNICODE_DISALLOW_FE_FF;
 #endif
 
@@ -138,10 +139,6 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
 	    if (flags & UNICODE_DISALLOW_SUPER
 		|| (UNICODE_IS_FE_FF(uv) && (flags & UNICODE_DISALLOW_FE_FF)))
 	    {
-#ifdef EBCDIC
-                Perl_die(aTHX_ "Can't represent character for Ox%"UVXf" on this platform", uv);
-                NOT_REACHED; /* NOTREACHED */
-#endif
 		return NULL;
 	    }
 	}
@@ -573,6 +570,10 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 
 #ifdef EBCDIC
     uv = NATIVE_UTF8_TO_I8(uv);
+
+    /* Was Not representable in UTF-EBCDIC before being deprecated, so don't
+     * allow it at all */
+    flags |= UTF8_DISALLOW_FE_FF;
 #endif
 
     /* Remove the leading bits that indicate the number of bytes in the
@@ -587,7 +588,6 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 
     for (s = s0 + 1; s < send; s++) {
 	if (LIKELY(UTF8_IS_CONTINUATION(*s))) {
-#ifndef EBCDIC	/* Can't overflow in EBCDIC */
 	    if (uv & UTF_ACCUMULATION_OVERFLOW_MASK) {
 
 		/* The original implementors viewed this malformation as more
@@ -599,7 +599,6 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 		overflowed = TRUE;
 		overflow_byte = *s; /* Save for warning message's use */
 	    }
-#endif
 	    uv = UTF8_ACCUMULATE(uv, *s);
 	}
 	else {
@@ -666,12 +665,10 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 	}
     }
 
-#ifndef EBCDIC	/* EBCDIC can't overflow */
     if (UNLIKELY(overflowed)) {
 	sv = sv_2mortal(Perl_newSVpvf(aTHX_ "%s (overflow at byte 0x%02x, after start byte 0x%02x)", malformed_text, overflow_byte, *s0));
 	goto malformed;
     }
-#endif
 
     if (do_overlong_test
 	&& expectlen > (STRLEN) OFFUNISKIP(uv)
@@ -714,14 +711,25 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 		sv = sv_2mortal(Perl_newSVpvf(aTHX_ "Code point 0x%04"UVXf" is not Unicode, may not be portable", uv));
 		pack_warn = packWARN(WARN_NON_UNICODE);
 	    }
-#ifndef EBCDIC	/* Can never have the equivalent of FE nor FF on EBCDIC, since
-                   not representable in UTF-EBCDIC */
 
-            /* The first byte being 0xFE or 0xFF is a subset of the SUPER code
-             * points.  We test for these after the regular SUPER ones, and
+            /* The first byte being 0xFE or 0xFF on non-EBCDIC systems means
+             * the code point represented is a SUPER code point that is above
+             * the maximum ever specified by a standard, and hence a Perl
+             * extension.  We test for these after the regular SUPER ones, and
              * before possibly bailing out, so that the more dire warning
-             * overrides the regular one, if applicable */
-            if ((*s0 & 0xFE) == 0xFE	/* matches both FE, FF */
+             * overrides the regular one, if applicable.  The test is different
+             * and somewhat more complicated on EBCDIC systems */
+            if (
+#ifndef EBCDIC
+                (*s0 & 0xFE) == 0xFE	/* matches both FE, FF */
+#else
+                 /* 2**31 and above meet these conditions on all EBCDIC pages
+                  * recognized.  Note this assumes a 32-bit word.  If larger
+                  * were used, we'd have to look at the intervening bytes as
+                  * well. */
+                *s0 == 0xFE && send - s0 > 5
+                && *(s0 + 5) >= 0x43
+#endif
                 && (flags & (UTF8_WARN_FE_FF|UTF8_DISALLOW_FE_FF)))
             {
                 if ((flags & (UTF8_WARN_FE_FF|UTF8_CHECK_ONLY))
@@ -735,7 +743,7 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
                     goto disallowed;
                 }
             }
-#endif
+
 	    if (flags & UTF8_DISALLOW_SUPER) {
 		goto disallowed;
 	    }

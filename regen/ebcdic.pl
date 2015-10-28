@@ -7,6 +7,9 @@ require 'regen/charset_translations.pl';
 # Generates the EBCDIC translation tables that were formerly hard-coded into
 # utfebcdic.h
 
+# WARNING: This must be kept in sync with the value in utfebcdic.h
+my $UTF8_MAXBYTES = 14;
+
 my $out_fh = open_new('ebcdic_tables.h', '>',
         {style => '*', by => $0, });
 
@@ -99,7 +102,10 @@ END
         # order 1-bits (up to 7)
         for my $i (0xC0 .. 255) {
             my $count;
-            if (($i & 0b11111110) == 0b11111110) {
+            if ($i == 0b11111111) {
+                $count= $UTF8_MAXBYTES;
+            }
+            elsif (($i & 0b11111110) == 0b11111110) {
                 $count= 7;
             }
             elsif (($i & 0b11111100) == 0b11111100) {

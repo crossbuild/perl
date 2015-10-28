@@ -365,7 +365,8 @@ for my $u (sort { utf8::unicode_to_native($a) <=> utf8::unicode_to_native($b) }
            $u < 0x4000      ? 3 :
            $u < 0x40000     ? 4 :
            $u < 0x400000    ? 5 :
-           $u < 0x4000000   ? 6 : 7
+           $u < 0x4000000   ? 6 :
+           $u < 0x40000000  ? 7 : 14
           );
 
     # If this test fails, subsequent ones are meaningless.
