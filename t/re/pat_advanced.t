@@ -218,10 +218,11 @@ sub run_tests {
         my $message = 'Test [[:cntrl:]]';
         my $AllBytes = join "" => map {chr} 0 .. 255;
         (my $x = $AllBytes) =~ s/[[:cntrl:]]//g;
-        $x = join "", map { chr utf8::native_to_unicode(ord $_) } split "", $x ;#unless $::IS_ASCII;
+        $x = join "", sort { $a cmp $b } map { chr utf8::native_to_unicode(ord $_) } split "", $x ;#unless $::IS_ASCII;
         is($x, join("", map {chr} 0x20 .. 0x7E, 0x80 .. 0xFF), $message);
 
         ($x = $AllBytes) =~ s/[^[:cntrl:]]//g;
+        $x = join "", sort { $a cmp $b } map { chr utf8::native_to_unicode(ord $_) } split "", $x ;#unless $::IS_ASCII;
         is($x, (join "", map {chr} 0x00 .. 0x1F, 0x7F), $message);
     }
 
