@@ -249,10 +249,9 @@ foreach my $start (@chars) {
     ok(1, "extend sp in pp_chomp");
 }
 
-SKIP: {
+{
     # [perl #73246] chop doesn't support utf8
     # the problem was UTF8_IS_START() didn't handle perl's extended UTF8
-    skip("Not representable in EBCDIC", 2) if $::IS_EBCDIC;
 
     # We use hex constants instead of literal chars to avoid compilation
     # errors in EBCDIC.

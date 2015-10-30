@@ -344,7 +344,7 @@ my @code_points = (0 .. 256,
                    0x40000 - 1, 0x40000,
                    0x400000 - 1, 0x400000,
                    0x4000000 - 1, 0x4000000,
-                   0x80000000 - 1   # Highest legal on EBCDIC machines
+                   0x80000000
                   );
 for my $u (sort { utf8::unicode_to_native($a) <=> utf8::unicode_to_native($b) }
           @code_points)

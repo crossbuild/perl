@@ -129,9 +129,7 @@ is(rindex($a, "foo",    ), 0);
     is (rindex($text, $search_octets), -1);
 }
 
-SKIP: {
-    skip "UTF-EBCDIC is limited to 0x7fffffff", 3 if $::IS_EBCDIC;
-
+{
     no warnings 'deprecated'; # These are above IV_MAX on 32 bit machines
     my $a = eval q{"\x{80000000}"};
     my $s = $a.'defxyz';
