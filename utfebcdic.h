@@ -172,14 +172,6 @@ END_EXTERN_C
 
  */
 
-/* Input is a true Unicode (not-native) code point */
-#define OFFUNISKIP(uv) ( (uv) < 0xA0        ? 1 :                   \
-		         (uv) < 0x400       ? 2 :                   \
-		         (uv) < 0x4000      ? 3 :                   \
-		         (uv) < 0x40000     ? 4 :                   \
-		         (uv) < 0x400000    ? 5 :                   \
-		         (uv) < 0x4000000   ? 6 :                   \
-		         (uv) < 0x40000000  ? 7 : UTF8_MAXBYTES )
 
 #define OFFUNI_IS_INVARIANT(c) (((UV)(c)) <  0xA0)
 
@@ -190,13 +182,18 @@ END_EXTERN_C
 #define UVCHR_IS_INVARIANT(uv) cBOOL(FITS_IN_8_BITS(uv)                        \
    && (PL_charclass[(U8) (uv)] & (_CC_mask(_CC_ASCII) | _CC_mask(_CC_CNTRL))))
 
-#define UVCHR_SKIP(uv) (UVCHR_IS_INVARIANT(uv)  ? 1 :                       \
-                        (uv) < 0x400            ? 2 :                       \
-		        (uv) < 0x4000           ? 3 :                       \
-		        (uv) < 0x40000          ? 4 :                       \
-		        (uv) < 0x400000         ? 5 :                       \
-		        (uv) < 0x4000000        ? 6 :                       \
-		        (uv) < 0x40000000       ? 7 : UTF8_MAXBYTES )
+/* Internal macro to be used only in the definitions of the next two */
+#define _BASE_UNI_SKIP(uv) ((uv) < 0x400       ? 2 :                   \
+		            (uv) < 0x4000      ? 3 :                   \
+		            (uv) < 0x40000     ? 4 :                   \
+		            (uv) < 0x400000    ? 5 :                   \
+		            (uv) < 0x4000000   ? 6 :                   \
+		            (uv) < 0x40000000  ? 7 : UTF8_MAXBYTES )
+
+/* Input is a true Unicode (not-native) code point */
+#define OFFUNISKIP(uv) ( OFFUNI_IS_INVARIANT(uv) ? 1 : _BASE_UNI_SKIP(uv) )
+
+#define UVCHR_SKIP(uv) ( UVCHR_IS_INVARIANT(uv) ? 1 : _BASE_UNI_SKIP(uv) )
 
 /* UTF-EBCDIC semantic macros - We used to transform back into I8 and then
  * compare, but now only have to do a single lookup by using a bit in
