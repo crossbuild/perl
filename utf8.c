@@ -116,7 +116,7 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
 #ifdef EBCDIC
     /* Was Not representable in UTF-EBCDIC before being deprecated, so don't
      * allow it at all */
-    flags |= UNICODE_DISALLOW_FE_FF;
+    /*flags |= UNICODE_DISALLOW_FE_FF;*/
 #endif
 
     /* The first problematic code point is the first surrogate */
@@ -610,7 +610,7 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 
     /* Was Not representable in UTF-EBCDIC before being deprecated, so don't
      * allow it at all */
-    flags |= UTF8_DISALLOW_FE_FF;
+    /*flags |= UTF8_DISALLOW_FE_FF; */
 #endif
 
     /* Remove the leading bits that indicate the number of bytes in the
@@ -764,7 +764,7 @@ Perl_utf8n_to_uvchr(pTHX_ const U8 *s, STRLEN curlen, STRLEN *retlen, U32 flags)
 #else
                  /* 2**31 and above meet these conditions on all EBCDIC pages
                   * recognized.  Note this assumes a 32-bit word.  If larger
-                  * were used, we'd have to look at the intervening bytes as
+                  * were used, the intervening bytes might be XXX as
                   * well. */
                 *s0 == 0xFE && send - s0 > 5
                 && *(s0 + 5) >= 0x43

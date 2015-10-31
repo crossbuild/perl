@@ -94,7 +94,7 @@ my $big_nonUnicode = uc(chr(0x8000_0000));
 no warnings 'non_unicode';
 my $big_nonUnicode = uc(chr(0x8000_0000));
 EXPECT
-Operation "uc" returns its argument for non-Unicode code point 0x80000000 at - line 9.
+Operation "uc" returns its argument for non-Unicode code point 0x80000000 at - line 3.
 ########
 use warnings 'utf8';
 my $d7ff  = lc pack("U", 0xD7FF);
