@@ -166,85 +166,98 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
 	}
     }
 
-#if defined(EBCDIC)
-    {
-	STRLEN len  = OFFUNISKIP(uv);
-	U8 *p = d+len-1;
-	while (p > d) {
-	    *p-- = (U8) I8_TO_NATIVE_UTF8((uv & UTF_CONTINUATION_MASK) | UTF_CONTINUATION_MARK);
-	    uv >>= UTF_ACCUMULATION_SHIFT;
-	}
-	*p = (U8) I8_TO_NATIVE_UTF8((uv & UTF_START_MASK(len)) | UTF_START_MARK(len));
-	return d+len;
-    }
-#else /* Non loop style */
-    if (uv < 0x800) {
-	*d++ = (U8)(( uv >>  6)         | 0xc0);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+#define SHIFT   UTF_ACCUMULATION_SHIFT
+#undef  MARK
+#define MARK    UTF_CONTINUATION_MARK 
+#define MASK    UTF_CONTINUATION_MASK 
+
+              /* The 32 is for C0-CF, D0-DF start bytes, each of which has a
+               * continuation byte which contributes SHIFT bits */
+    if (uv < (32 * (1U << SHIFT))) {
+	*d++ = (U8)(( uv >> (1 * SHIFT)) | UTF_START_MARK(2));
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
-    if (uv < 0x10000) {
-	*d++ = (U8)(( uv >> 12)         | 0xe0);
-	*d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+              /* The 16 is for E0-EF start bytes, the 2 is for 2 continuation
+               * bytes which each contribute SHIFT bits */
+    if (uv < (16 * (1U << (2 * SHIFT)))) {
+	*d++ = (U8)(( uv >> (2 * SHIFT)) | UTF_START_MARK(3));
+	*d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
-    if (uv < 0x200000) {
-	*d++ = (U8)(( uv >> 18)         | 0xf0);
-	*d++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+              /* The 8 is for F0-F7 start bytes, the 3 is for 3 continuation
+               * bytes which each contribute SHIFT bits */
+    if (uv < (8 * (1U << (3 * SHIFT)))) {
+	*d++ = (U8)(( uv >> (3 * SHIFT)) | UTF_START_MARK(4));
+	*d++ = (U8)(((uv >> (2 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
-    if (uv < 0x4000000) {
-	*d++ = (U8)(( uv >> 24)         | 0xf8);
-	*d++ = (U8)(((uv >> 18) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+              /* The 4 is for F8-FB start bytes, the 4 is for 4 continuation
+               * bytes which each contribute SHIFT bits */
+    if (uv < (4 * (1U << (4 * SHIFT)))) {
+	*d++ = (U8)(( uv >> (4 * SHIFT)) | UTF_START_MARK(5));
+	*d++ = (U8)(((uv >> (3 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (2 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
-    if (uv < 0x80000000) {
-	*d++ = (U8)(( uv >> 30)         | 0xfc);
-	*d++ = (U8)(((uv >> 24) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 18) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+              /* The 2 is for FC-FD start bytes, the 5 is for 5 continuation
+               * bytes which each contribute SHIFT bits */
+    if (uv < (2 * (1U << (5 * SHIFT)))) {
+	*d++ = (U8)(( uv >> (5 * SHIFT)) | UTF_START_MARK(6));
+	*d++ = (U8)(((uv >> (4 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (3 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (2 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
-#ifdef UTF8_QUAD_MAX
+#ifdef EBCDIC
+              /* The 1 is for the FE start byte, the 6 is for 6 continuation
+               * bytes which each contribute SHIFT bits */
+    if (uv < (1 * (1U << (6 * SHIFT)))) {
+#elif defined(UTF8_QUAD_MAX)
     if (uv < UTF8_QUAD_MAX)
 #endif
     {
-	*d++ =                            0xfe;	/* Can't match U+FEFF! */
-	*d++ = (U8)(((uv >> 30) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 24) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 18) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+	*d++ = (U8)(( uv >> (6 * SHIFT)) | UTF_START_MARK(7)); /* Can't match U+FEFF! */
+	*d++ = (U8)(((uv >> (5 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (4 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (3 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (2 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
-#ifdef UTF8_QUAD_MAX
+
+    /* Below is for a 0xFF start byte */
+#if defined(UTF8_QUAD_MAX) || defined(EBCDIC)
     {
 	*d++ =                            0xff;		/* Can't match U+FFFE! */
+#ifdef EBCDIC
+	*d++ = (U8)(((uv >>(12 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >>(11 * SHIFT)) & MASK) | MARK);
+#else
 	*d++ =                            0x80;		/* 6 Reserved bits */
-	*d++ = (U8)(((uv >> 60) & 0x0f) | 0x80);	/* 2 Reserved bits */
-	*d++ = (U8)(((uv >> 54) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 48) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 42) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 36) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 30) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 24) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 18) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
-	*d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	*d++ = (U8)(( uv        & 0x3f) | 0x80);
+#endif
+	*d++ = (U8)(((uv >>(10 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (9 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (8 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (7 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (6 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (5 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (4 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (3 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (2 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+	*d++ = (U8)(( uv                 & MASK) | MARK);
 	return d;
     }
 #endif
-#endif /* Non loop style */
 }
 /*
 =for apidoc uvchr_to_utf8
@@ -1361,23 +1374,18 @@ Perl_utf16_to_utf8(pTHX_ U8* p, U8* d, I32 bytelen, I32 *newlen)
                                        + (low - FIRST_LOW_SURROGATE) + 0x10000;
 	    }
 	}
-#ifdef EBCDIC
-        d = uvoffuni_to_utf8_flags(d, uv, 0);
-#else
+
 	if (uv < 0x10000) {
-	    *d++ = (U8)(( uv >> 12)         | 0xe0);
-	    *d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	    *d++ = (U8)(( uv        & 0x3f) | 0x80);
-	    continue;
+            *d++ = (U8)(( uv >> (2 * SHIFT)) | UTF_START_MARK(3));
+            *d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+            *d++ = (U8)(( uv                 & MASK) | MARK);
 	}
 	else {
-	    *d++ = (U8)(( uv >> 18)         | 0xf0);
-	    *d++ = (U8)(((uv >> 12) & 0x3f) | 0x80);
-	    *d++ = (U8)(((uv >>  6) & 0x3f) | 0x80);
-	    *d++ = (U8)(( uv        & 0x3f) | 0x80);
-	    continue;
+            *d++ = (U8)(( uv >> (3 * SHIFT)) | UTF_START_MARK(4));
+            *d++ = (U8)(((uv >> (2 * SHIFT)) & MASK) | MARK);
+            *d++ = (U8)(((uv >> (1 * SHIFT)) & MASK) | MARK);
+            *d++ = (U8)(( uv                 & MASK) | MARK);
 	}
-#endif
     }
     *newlen = d - dstart;
     return d;

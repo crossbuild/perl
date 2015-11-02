@@ -173,7 +173,6 @@ END_EXTERN_C
 
  */
 
-
 #define OFFUNI_IS_INVARIANT(c) (((UV)(c)) <  0xA0)
 
 /* It turns out that on EBCDIC platforms, the invariants are the characters
@@ -182,19 +181,6 @@ END_EXTERN_C
  * */
 #define UVCHR_IS_INVARIANT(uv) cBOOL(FITS_IN_8_BITS(uv)                        \
    && (PL_charclass[(U8) (uv)] & (_CC_mask(_CC_ASCII) | _CC_mask(_CC_CNTRL))))
-
-/* Internal macro to be used only in the definitions of the next two */
-#define _BASE_UNI_SKIP(uv) ((uv) < 0x400       ? 2 :                   \
-		            (uv) < 0x4000      ? 3 :                   \
-		            (uv) < 0x40000     ? 4 :                   \
-		            (uv) < 0x400000    ? 5 :                   \
-		            (uv) < 0x4000000   ? 6 :                   \
-		            (uv) < 0x40000000  ? 7 : UTF8_MAXBYTES )
-
-/* Input is a true Unicode (not-native) code point */
-#define OFFUNISKIP(uv) ( OFFUNI_IS_INVARIANT(uv) ? 1 : _BASE_UNI_SKIP(uv) )
-
-#define UVCHR_SKIP(uv) ( UVCHR_IS_INVARIANT(uv) ? 1 : _BASE_UNI_SKIP(uv) )
 
 /* UTF-EBCDIC semantic macros - We used to transform back into I8 and then
  * compare, but now only have to do a single lookup by using a bit in
@@ -228,8 +214,6 @@ END_EXTERN_C
 /* ^? is defined to be APC on EBCDIC systems.  See the definition of toCTRL()
  * for more */
 #define QUESTION_MARK_CTRL   LATIN1_TO_NATIVE(0x9F)
-
-#define MAX_UTF8_TWO_BYTE 0x3FF
 
 /*
  * ex: set ts=8 sts=4 sw=4 et:

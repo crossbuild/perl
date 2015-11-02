@@ -244,42 +244,9 @@ Perl's extended UTF-8 means we can have start bytes up to FF.
  * real information */
 #define UTF_ACCUMULATION_SHIFT		6
 
-#ifdef   UTF8_QUAD_MAX
-
-/* Input is a true Unicode (not-native) code point */
-#define OFFUNISKIP(uv) ( (uv) < 0x80        ? 1 : \
-		      (uv) < 0x800          ? 2 : \
-		      (uv) < 0x10000        ? 3 : \
-		      (uv) < 0x200000       ? 4 : \
-		      (uv) < 0x4000000      ? 5 : \
-		      (uv) < 0x80000000     ? 6 : \
-                      (uv) < UTF8_QUAD_MAX ? 7 : UTF8_MAXBYTES )
-#else
-/* No, I'm not even going to *TRY* putting #ifdef inside a #define */
-#define OFFUNISKIP(uv) ( (uv) < 0x80        ? 1 : \
-		      (uv) < 0x800          ? 2 : \
-		      (uv) < 0x10000        ? 3 : \
-		      (uv) < 0x200000       ? 4 : \
-		      (uv) < 0x4000000      ? 5 : \
-		      (uv) < 0x80000000     ? 6 : 7 )
-#endif
-
 /* ^? is defined to be DEL on ASCII systems.  See the definition of toCTRL()
  * for more */
 #define QUESTION_MARK_CTRL  DEL_NATIVE
-
-#define MAX_UTF8_TWO_BYTE 0x7FF
-
-/*
-
-=for apidoc Am|STRLEN|UVCHR_SKIP|UV cp
-returns the number of bytes required to represent the code point C<cp> when
-encoded as UTF-8.  C<cp> is a native (ASCII or EBCDIC) code point if less than
-255; a Unicode code point otherwise.
-
-=cut
- */
-#define UVCHR_SKIP(uv) OFFUNISKIP(uv)
 
 /* Surrogates, non-character code points and above-Unicode code points are
  * problematic in some contexts.  This allows code that needs to check for
@@ -291,6 +258,44 @@ encoded as UTF-8.  C<cp> is a native (ASCII or EBCDIC) code point if less than
 
 /* 2**UTF_ACCUMULATION_SHIFT - 1 */
 #define UTF_CONTINUATION_MASK  ((U8) ((1U << (UTF_ACCUMULATION_SHIFT - 0) ) - 1))
+
+/* Internal macro to be used only in this file */
+#define __PREFIX_UNI_SKIP(uv)                                               \
+          (uv) < (32 * (1U << (    UTF_ACCUMULATION_SHIFT))) ? 2 :          \
+          (uv) < (16 * (1U << (2 * UTF_ACCUMULATION_SHIFT))) ? 3 :          \
+          (uv) < ( 8 * (1U << (3 * UTF_ACCUMULATION_SHIFT))) ? 4 :          \
+          (uv) < ( 4 * (1U << (4 * UTF_ACCUMULATION_SHIFT))) ? 5 :          \
+          (uv) < ( 2 * (1U << (5 * UTF_ACCUMULATION_SHIFT))) ? 6 :
+
+/* Internal macro to be used only in this file */
+#ifdef EBCDIC
+#   define __BASE_UNI_SKIP(uv) (__PREFIX_UNI_SKIP(uv)                       \
+     (uv) < ( 1 * (1U << (6 * UTF_ACCUMULATION_SHIFT))) ? 7 : UTF8_MAXBYTES)
+#elif defined(UTF8_QUAD_MAX)
+#   define __BASE_UNI_SKIP(uv) (__PREFIX_UNI_SKIP(uv)                       \
+     (uv) < UTF8_QUAD_MAX ? 7 : UTF8_MAXBYTES)
+#else
+#   define __BASE_UNI_SKIP(uv) (__PREFIX_UNI_SKIP(uv) 7               
+#endif
+
+/* Input is a true Unicode (not-native) code point */
+#define OFFUNISKIP(uv) (OFFUNI_IS_INVARIANT(uv) ? 1 : __BASE_UNI_SKIP(uv) )
+
+/*
+
+=for apidoc Am|STRLEN|UVCHR_SKIP|UV cp
+returns the number of bytes required to represent the code point C<cp> when
+encoded as UTF-8.  C<cp> is a native (ASCII or EBCDIC) code point if less than
+255; a Unicode code point otherwise.
+
+=cut
+ */
+#define UVCHR_SKIP(uv) ( UVCHR_IS_INVARIANT(uv) ? 1 : __BASE_UNI_SKIP(uv) )
+
+#define MAX_UTF8_TWO_BYTE (32 * (1U << UTF_ACCUMULATION_SHIFT) - 1)
+
+/* constrained by EBCDIC which has 5 bits per continuation byte */
+#define MAX_PORTABLE_UTF8_TWO_BYTE (32 * (1U << 5) - 1)
 
 /* The maximum number of UTF-8 bytes a single Unicode character can
  * uppercase/lowercase/fold into.  Unicode guarantees that the maximum
@@ -420,8 +425,6 @@ only) byte is pointed to by C<s>.
 /* Like the above, but its name implies a non-UTF8 input, which as the comments
  * above show, doesn't matter as to its implementation */
 #define NATIVE_BYTE_IS_INVARIANT(c)	UVCHR_IS_INVARIANT(c)
-
-#define MAX_PORTABLE_UTF8_TWO_BYTE 0x3FF    /* constrained by EBCDIC */
 
 /* The macros in the next 4 sets are used to generate the two utf8 or utfebcdic
  * bytes from an ordinal that is known to fit into exactly two (not one) bytes;
