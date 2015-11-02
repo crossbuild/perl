@@ -149,7 +149,8 @@ END_EXTERN_C
 /* NOTE: Strictly speaking Perl's UTF-8 should not be called UTF-8 since UTF-8
  * is an encoding of Unicode, and Unicode's upper limit, 0x10FFFF, can be
  * expressed with 5 bytes.  However, Perl thinks of UTF-8 as a way to encode
- * non-negative integers in a binary format, even those above Unicode.
+ * non-negative integers in a binary format, even those above Unicode.  14 is
+ * the smallest number that covers 2**64
  *
  * WARNING: This number must be in sync with the value in regen/ebcdic.pl */
 #define UTF8_MAXBYTES 14
@@ -222,7 +223,6 @@ END_EXTERN_C
                 _generic_isCC(c, _CC_UTF8_START_BYTE_IS_FOR_AT_LEAST_SURROGATE)
 
 #define UTF_CONTINUATION_MARK		0xA0
-#define UTF_CONTINUATION_MASK		((U8)0x1f)
 #define UTF_ACCUMULATION_SHIFT		5
 
 /* ^? is defined to be APC on EBCDIC systems.  See the definition of toCTRL()

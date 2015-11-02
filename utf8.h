@@ -86,6 +86,9 @@ than just the ASCII characters, so C<is_invariant_string> is preferred.
 
 #define ibcmp_utf8(s1, pe1, l1, u1, s2, pe2, l2, u2) \
 		    cBOOL(! foldEQ_utf8(s1, pe1, l1, u1, s2, pe2, l2, u2))
+#if UVSIZE >= 8
+#  define UTF8_QUAD_MAX UINT64_C(0x1000000000)
+#endif
 
 #ifdef EBCDIC
 /* The equivalent of these macros but implementing UTF-EBCDIC
@@ -123,13 +126,9 @@ EXTCONST unsigned char PL_utf8skip[] = {
 /* 0xD0 */ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* U+0400 to U+07FF */
 /* 0xE0 */ 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, /* U+0800 to U+FFFF */
 /* 0xF0 */ 4,4,4,4,4,4,4,4,5,5,5,5,6,6,	    /* above BMP to 2**31 - 1 */
-           /* Perl extended (never was
-            * official UTF-8).  Up to
-            * 36 bit */
+           /* Perl extended (never was official UTF-8).  Up to 36 bit */
 /* 0xFE */                             7,
-           /* More extended, Up to
-            * 72 bits (64-bit +
-            * reserved) */
+           /* More extended, Up to 72 bits (64-bit + reserved) */
 /* 0xFF */                               UTF8_MAXBYTES
 };
 #else
@@ -245,11 +244,7 @@ Perl's extended UTF-8 means we can have start bytes up to FF.
  * real information */
 #define UTF_ACCUMULATION_SHIFT		6
 
-/* 2**UTF_ACCUMULATION_SHIFT - 1 */
-#define UTF_CONTINUATION_MASK		((U8)0x3f)
-
-#if UVSIZE >= 8
-#  define UTF8_QUAD_MAX UINT64_C(0x1000000000)
+#ifdef   UTF8_QUAD_MAX
 
 /* Input is a true Unicode (not-native) code point */
 #define OFFUNISKIP(uv) ( (uv) < 0x80        ? 1 : \
@@ -293,6 +288,9 @@ encoded as UTF-8.  C<cp> is a native (ASCII or EBCDIC) code point if less than
 #define isUTF8_POSSIBLY_PROBLEMATIC(c) ((U8) c >= 0xED)
 
 #endif /* EBCDIC vs ASCII */
+
+/* 2**UTF_ACCUMULATION_SHIFT - 1 */
+#define UTF_CONTINUATION_MASK  ((U8) ((1U << (UTF_ACCUMULATION_SHIFT - 0) ) - 1))
 
 /* The maximum number of UTF-8 bytes a single Unicode character can
  * uppercase/lowercase/fold into.  Unicode guarantees that the maximum
