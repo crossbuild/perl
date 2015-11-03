@@ -1493,7 +1493,7 @@ Perl_to_uni_upper_lc(pTHX_ U32 c)
     /* XXX returns only the first character -- do not use XXX */
     /* XXX no locale support yet */
     STRLEN len;
-    U8 tmpbuf[UTF8_MAXBYTES_CASE+1];
+    U8 tmpbuf[20+1];
     return (U32)to_uni_upper(c, tmpbuf, &len);
 }
 
@@ -1503,7 +1503,7 @@ Perl_to_uni_title_lc(pTHX_ U32 c)
     /* XXX returns only the first character XXX -- do not use XXX */
     /* XXX no locale support yet */
     STRLEN len;
-    U8 tmpbuf[UTF8_MAXBYTES_CASE+1];
+    U8 tmpbuf[20+1];
     return (U32)to_uni_title(c, tmpbuf, &len);
 }
 
@@ -1513,7 +1513,7 @@ Perl_to_uni_lower_lc(pTHX_ U32 c)
     /* XXX returns only the first character -- do not use XXX */
     /* XXX no locale support yet */
     STRLEN len;
-    U8 tmpbuf[UTF8_MAXBYTES_CASE+1];
+    U8 tmpbuf[20+1];
     return (U32)to_uni_lower(c, tmpbuf, &len);
 }
 
