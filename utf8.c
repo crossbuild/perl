@@ -238,16 +238,23 @@ Perl_uvoffuni_to_utf8_flags(pTHX_ U8 *d, UV uv, UV flags)
 #if defined(UTF8_QUAD_MAX) || defined(EBCDIC)
     {
 	*d++ =                            0xff;		/* Can't match U+FFFE! */
-#ifdef EBCDIC
+#   ifdef UTF8_QUAD_MAX
+#      ifdef EBCDIC
 	*d++ = (U8)(((uv >>(12 * SHIFT)) & MASK) | MARK);
 	*d++ = (U8)(((uv >>(11 * SHIFT)) & MASK) | MARK);
-#else
-	*d++ =                            0x80;		/* 6 Reserved bits */
-#endif
+#      else
+	*d++ =               /* 6 Reserved bits */ MARK;
+#      endif
 	*d++ = (U8)(((uv >>(10 * SHIFT)) & MASK) | MARK);
 	*d++ = (U8)(((uv >> (9 * SHIFT)) & MASK) | MARK);
 	*d++ = (U8)(((uv >> (8 * SHIFT)) & MASK) | MARK);
 	*d++ = (U8)(((uv >> (7 * SHIFT)) & MASK) | MARK);
+#   else    /* Must be EBCDIC without quad */
+	*d++ =               /* 5 Reserved bits */ MARK;
+	*d++ =               /* 5 Reserved bits */ MARK;
+	*d++ =               /* 5 Reserved bits */ MARK;
+	*d++ =               /* 5 Reserved bits */ MARK;
+#   endif
 	*d++ = (U8)(((uv >> (6 * SHIFT)) & MASK) | MARK);
 	*d++ = (U8)(((uv >> (5 * SHIFT)) & MASK) | MARK);
 	*d++ = (U8)(((uv >> (4 * SHIFT)) & MASK) | MARK);
